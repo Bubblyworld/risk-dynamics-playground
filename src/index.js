@@ -65,7 +65,20 @@ function edge(id, source, target) {
   return {
     id,
     source,
-    target
+    target,
+
+    contains: function(vertex) {
+      return this.source.id == vertex.id || this.target.id == vertex.id;
+    },
+
+    other: function(vertex) {
+      if (!this.contains(vertex)) {
+        alert('Invariant failed in edge.other().');
+        return source;
+      }
+
+      return (this.source.id == vertex.id) ? this.target : this.source;
+    }
   };
 }
 
@@ -80,30 +93,6 @@ function graph(vertices, edges) {
 
     addEdge: function(edge) {
       return graph(this.vertices, [...this.edges, edge]);
-    },
-
-    toCytoscape: function() {
-      let elements = [];
-
-      for (let vertex of this.vertices) {
-        elements.push({
-          data: {
-            id: vertex.id
-          }
-        });
-      }
-
-      for (let edge of this.edges) {
-        elements.push({
-          data: { 
-            id: edge.id,
-            source: edge.source.id,
-            target: edge.target.id
-          }
-        });
-      }
-
-      return elements;
     }
   };
 }
@@ -115,6 +104,30 @@ function colouring(graph, colours) {
 
     setColour: function(vertex, colour) {
       return colouring(graph, { ...colours, [vertex.id]: colour });
+    },
+
+    getColourWeight: function(vertex, colour) {
+      let weight = (this.colours[vertex.id] == colour) ? 1.5 : 0;
+
+      for (let edge of this.graph.edges) {
+        if (!edge.contains(vertex)) continue;
+
+        weight += (this.colours[edge.other(vertex).id] == colour) ? 1.0 : 0;
+      }
+
+      return weight;
+    },
+
+    updateColouring: function() {
+      let colours = {};
+      for (let vertex of this.graph.vertices) {
+        if (this.getColourWeight(vertex, WHITE) > this.getColourWeight(vertex, BLACK))
+          colours[vertex.id] = WHITE;
+        else
+          colours[vertex.id] = BLACK;
+      }
+
+      return colouring(this.graph, colours);
     },
 
     toCytoscape: function() {
@@ -149,7 +162,6 @@ function colouring(graph, colours) {
 // |    UTILITIES AND HOOKS      |
 // +-----------------------------+
 
-// Runs a function on the colouring and redraws it with any changes.
 function mutateColouring(fn) {
   let c = cy.data();
   for (let vertex of c.graph.vertices) {
@@ -189,3 +201,4 @@ function colourSelectedVertices(colour) {
 window.WHITE = WHITE;
 window.BLACK = BLACK;
 window.colourSelected = (colour) => mutateColouring(colourSelectedVertices(colour));
+window.updateColouring = () => mutateColouring((c) => c.updateColouring());
