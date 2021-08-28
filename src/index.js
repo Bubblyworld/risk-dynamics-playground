@@ -10,16 +10,21 @@ let WHITE = "white";
 let u = vertex('u');
 let v = vertex('v');
 let w = vertex('w');
+let x = vertex('x');
 
-let g = graph([u, v, w], [])
+let g = graph([u, v, w, x], [])
   .addEdge(edge('uv', u, v))
+  .addEdge(edge('uw', u, w))
+  .addEdge(edge('ux', u, x))
   .addEdge(edge('vw', v, w))
-  .addEdge(edge('wu', w, u));
+  .addEdge(edge('vx', v, x))
+  .addEdge(edge('wx', w, x));
 
 let c = colouring(g, {
   [u.id]: WHITE,
   [v.id]: BLACK,
   [w.id]: WHITE,
+  [x.id]: BLACK,
 });
 
 let cy = cytoscape({
