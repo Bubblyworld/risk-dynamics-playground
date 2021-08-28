@@ -23,16 +23,17 @@ let c = colouring(g, {
 });
 
 let cy = cytoscape({
+  data: c,
   elements: c.toCytoscape(),
   container: document.getElementById('editor'),
-
+  layout: { name: 'cose' },
   style: [
     {
       selector: 'node',
       style: {
-        'border-color': 'black',
-        'border-width': '1px',
-        'background-color': 'gray'
+        'border-color': (elem) => elem.selected() ? 'blue' : 'black',
+        'border-width': (elem) => elem.selected() ? '2px' : '1px',
+        'background-color': 'gray',
       }
     },
     {
@@ -107,7 +108,6 @@ function graph(vertices, edges) {
   };
 }
 
-// Colours is a map from vertex id to colour constant.
 function colouring(graph, colours) {
   return {
     graph,
@@ -144,3 +144,48 @@ function colouring(graph, colours) {
     }
   };
 }
+
+// +-----------------------------+
+// |    UTILITIES AND HOOKS      |
+// +-----------------------------+
+
+// Runs a function on the colouring and redraws it with any changes.
+function mutateColouring(fn) {
+  let c = cy.data();
+  for (let vertex of c.graph.vertices) {
+    cy.$('#' + vertex.id).removeClass(c.colours[vertex.id]);
+  }
+
+  c = fn(c);
+  for (let vertex of c.graph.vertices) {
+    cy.$('#' + vertex.id).addClass(c.colours[vertex.id]);
+  }
+
+  cy.data(c);
+}
+
+function getSelectedVertices() {
+  let res = [];
+  for (let elem of cy.nodes()) {
+    if (elem.selected()) {
+      res.push(vertex(elem.id()));
+    }
+  }
+
+  return res;
+}
+
+function colourSelectedVertices(colour) {
+  return (c) => {
+    let vertices = getSelectedVertices();
+    for (let vertex of vertices) {
+      c = c.setColour(vertex, colour);
+    }
+
+    return c;
+  };
+}
+
+window.WHITE = WHITE;
+window.BLACK = BLACK;
+window.colourSelected = (colour) => mutateColouring(colourSelectedVertices(colour));

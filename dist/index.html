@@ -53,7 +53,7 @@
         align-items: center;
         margin-top: 1em;
         width: 300px;
-        height: 40px;
+        height: 100px;
         background-color: white;
         border: 1px solid darkgray;
         font-size: small;
@@ -69,8 +69,9 @@
       </div>
 
       <div class="select-wrap">
-        <select class="select-select" id="select"></select>
-        <button class="select-button" onclick="runTask()">Run Task</button>
+        <button class="select-button" onclick="colourSelected(BLACK)">Black</button>
+        <button class="select-button" onclick="colourSelected(WHITE)">White</button>
+        <button class="select-button" onclick="deleteSelected()">Delete</button>
       </div>
 
       <div class="task-text" id="text">
