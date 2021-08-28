@@ -1,0 +1,24 @@
+{
+  "name": "graph-dynamics",
+  "version": "0.0.0",
+  "description": "Web interface for exploring a graph-theory concept.",
+  "private": true,
+  "main": "index.js",
+  "scripts": {},
+  "keywords": [
+    "graph",
+    "theory",
+    "dynamics"
+  ],
+  "author": "Guy Paterson-Jones",
+  "license": "MIT",
+  "dependencies": {
+    "cytoscape": "^3.19.1"
+  },
+  "devDependencies": {
+    "css-loader": "^6.0.0",
+    "style-loader": "^3.1.0",
+    "webpack": "^5.45.1",
+    "webpack-cli": "^4.7.2"
+  }
+}

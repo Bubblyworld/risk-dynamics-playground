@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Graph Dynamics Playground</title>
+    <link rel="stylesheet" href="reset.css">
+    <style type="text/css" media="screen">
+      body {
+        background-color: lightgray;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      .app-center {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .editor-wrap { 
+        background-color: white;
+        width: 700px;
+        height: 500px;
+      }
+
+      .editor {
+        height: 100%;
+        width: 100%;
+      }
+
+      .select-wrap {
+        width: 400px;
+        margin-top: 1em;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .select-select {
+        width: 200px;
+      }
+
+      .select-button {
+        margin-left: 1em;
+      }
+
+      .task-text {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 1em;
+        width: 300px;
+        height: 40px;
+        background-color: white;
+        border: 1px solid darkgray;
+        font-size: small;
+        font-style: italic;
+      }
+    </style>
+  </head>
+  
+  <body>
+    <div class="app-center">
+      <div class="editor-wrap">
+        <div id="editor" class="editor"></div>
+      </div>
+
+      <div class="select-wrap">
+        <select class="select-select" id="select"></select>
+        <button class="select-button" onclick="runTask()">Run Task</button>
+      </div>
+
+      <div class="task-text" id="text">
+        <i>No task has been run yet.</i>
+      </div>
+    </div>
+
+    <script src="main.js"></script>
+  </body>
+</html>
