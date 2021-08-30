@@ -114,8 +114,15 @@ function graph(vertices, edges) {
       return graph([...this.vertices, vertex], this.edges);
     },
 
+    removeVertex: function(vertex) {
+      let vertices = this.vertices.filter(v => v.id !== vertex.id);
+      let edges = this.edges.filter(e => !e.contains(vertex));
+
+      return graph(vertices, edges);
+    },
+
     containsVertex: function(vertex) {
-      return vertex.id in this.vertices.map(v => v.id);
+      return this.vertices.map(v => v.id).includes(vertex.id);
     },
 
     addEdge: function(vertexA, vertexB) {
@@ -125,6 +132,12 @@ function graph(vertices, edges) {
 
       let e = edge(`${vertexA.id}_${vertexB.id}`, vertexA, vertexB);
       return graph(this.vertices, [...this.edges, e]);
+    },
+
+    removeEdge: function(edge) {
+      let edges = this.edges.filter(e => e.id !== edge.id);
+
+      return graph(this.vertices, edges);
     },
 
     containsEdge: function(vertexA, vertexB) {
@@ -176,10 +189,19 @@ function colouring(graph, colours) {
       return colouring(this.graph.addEdge(vertexA, vertexB), this.colours);
     },
 
+    disconnect: function(edge) {
+      return colouring(this.graph.removeEdge(edge), this.colours);
+    },
+
     add: function(colour, x, y) {
       let vertex = vertexAt(getUUID(), x, y);
       let graph = this.graph.addVertex(vertex);
       return colouring(graph, { ...this.colours, [vertex.id]: colour });
+    },
+
+    remove: function(vertex) {
+      let { [vertex.id]: _, ...colours } = this.colours;
+      return colouring(this.graph.removeVertex(vertex), colours);
     },
 
     toCytoscape: function() {
@@ -225,15 +247,32 @@ function colouring(graph, colours) {
 
 function mutateColouring(fn) {
   let c = cy.data();
-  for (let vertex of c.graph.vertices) {
-    cy.$('#' + vertex.id).removeClass(c.colours[vertex.id]);
+  let _c = fn(c);
+
+  // Delete vertices and edges that aren't present in the new colouring.
+  for (let edge of c.graph.edges) {
+    if (!_c.graph.containsEdge(edge.source, edge.target)) {
+      cy.$(`#${edge.id}`)[0].remove();
+    }
   }
 
-  c = fn(c);
-  cy.data(c);
-  cy.add(c.toCytoscape());
   for (let vertex of c.graph.vertices) {
-    cy.$('#' + vertex.id).addClass(c.colours[vertex.id]);
+    if (!_c.graph.containsVertex(vertex)) {
+      cy.$(`#${vertex.id}`)[0].remove();
+    }
+  }
+
+  // Add in new vertices and edges that aren't present in the old colouring.
+  cy.data(_c);
+  cy.add(_c.toCytoscape());
+
+  // Recolor vertices to reflect possibly new labels.
+  for (let vertex of c.graph.vertices) {
+    cy.$(`#${vertex.id}`).removeClass(c.colours[vertex.id]);
+  }
+
+  for (let vertex of _c.graph.vertices) {
+    cy.$(`#${vertex.id}`).addClass(_c.colours[vertex.id]);
   }
 }
 
@@ -241,7 +280,18 @@ function getSelectedVertices() {
   let res = [];
   for (let elem of cy.nodes()) {
     if (elem.selected()) {
-      res.push(vertex(elem.id()));
+      res.push(vertexAt(elem.id(), elem.position.x, elem.position.y));
+    }
+  }
+
+  return res;
+}
+
+function getSelectedEdges() {
+  let res = [];
+  for (let elem of cy.edges()) {
+    if (elem.selected()) {
+      res.push(edge(elem.id(), vertex(elem.source().id()), vertex(elem.target().id())));
     }
   }
 
@@ -265,6 +315,20 @@ function unselectSelected() {
       elem.unselect();
     }
   }
+}
+
+function deleteSelected() {
+  return (c) => {
+    for (let vertex of getSelectedVertices()) {
+      c = c.remove(vertex);
+    }
+
+    for (let edge of getSelectedEdges()) {
+      c = c.disconnect(edge);
+    }
+
+    return c;
+  };
 }
 
 function connectSelectedVertices() {
@@ -297,6 +361,7 @@ function getUUID() {
 // |   HOOKS                     |
 // +-----------------------------+
 
+window.cy = cy;
 window.WHITE = WHITE;
 window.BLACK = BLACK;
 
@@ -308,6 +373,10 @@ window.colourSelected = (colour) => {
 window.connectSelected = () => {
   mutateColouring(connectSelectedVertices());
   unselectSelected();
+}
+
+window.deleteSelected = () => {
+  mutateColouring(deleteSelected());
 }
 
 window.updateColouring = () => {
