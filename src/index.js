@@ -249,6 +249,11 @@ function mutateColouring(fn) {
   let c = cy.data();
   let _c = fn(c);
 
+  // Remove colours from all of c's vertices.
+  for (let vertex of c.graph.vertices) {
+    cy.$(`#${vertex.id}`).removeClass(c.colours[vertex.id]);
+  }
+
   // Delete vertices and edges that aren't present in the new colouring.
   for (let edge of c.graph.edges) {
     if (!_c.graph.containsEdge(edge.source, edge.target)) {
@@ -267,10 +272,6 @@ function mutateColouring(fn) {
   cy.add(_c.toCytoscape());
 
   // Recolor vertices to reflect possibly new labels.
-  for (let vertex of c.graph.vertices) {
-    cy.$(`#${vertex.id}`).removeClass(c.colours[vertex.id]);
-  }
-
   for (let vertex of _c.graph.vertices) {
     cy.$(`#${vertex.id}`).addClass(_c.colours[vertex.id]);
   }
