@@ -13,7 +13,8 @@
   "author": "Guy Paterson-Jones",
   "license": "MIT",
   "dependencies": {
-    "cytoscape": "^3.19.1"
+    "cytoscape": "^3.19.1",
+    "mousetrap": "^1.6.5"
   },
   "devDependencies": {
     "css-loader": "^6.0.0",

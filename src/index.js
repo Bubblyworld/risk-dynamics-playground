@@ -1,4 +1,5 @@
-import cytoscape from 'cytoscape';
+import cytoscape from "cytoscape";
+import mousetrap from "mousetrap";
 
 // +-----------------------------+
 // |        INITIALISATION       |
@@ -7,11 +8,13 @@ import cytoscape from 'cytoscape';
 let BLACK = "black";
 let WHITE = "white";
 let UUID = 1;
+let EDITOR_ID = "editor";
+let DATA_ID = "text";
 
-let u = vertex('u');
-let v = vertex('v');
-let w = vertex('w');
-let x = vertex('x');
+let u = vertex("u");
+let v = vertex("v");
+let w = vertex("w");
+let x = vertex("x");
 
 let g = graph([u, v, w, x], [])
   .addEdge(u, v)
@@ -29,34 +32,34 @@ let c = colouring(g, {
 let cy = cytoscape({
   data: c,
   elements: c.toCytoscape(),
-  container: document.getElementById('editor'),
-  layout: { name: 'cose' },
+  container: document.getElementById(EDITOR_ID),
+  layout: { name: "cose" },
   style: [
     {
-      selector: 'node',
+      selector: "node",
       style: {
-        'border-color': (elem) => elem.selected() ? 'blue' : 'black',
-        'border-width': (elem) => elem.selected() ? '2px' : '1px',
-        'background-color': 'gray',
-        'label': 'data(id)'
+        "border-color": (elem) => elem.selected() ? "blue" : "black",
+        "border-width": (elem) => elem.selected() ? "2px" : "1px",
+        "background-color": "gray",
+        "label": "data(id)"
       }
     },
     {
-      selector: '.black',
+      selector: ".black",
       style: {
-        'background-color': '#303030'
+        "background-color": "#303030"
       }
     },
     {
-      selector: '.white',
+      selector: ".white",
       style: {
-        'background-color': 'white'
+        "background-color": "white"
       }
     },
   ]
 });
 
-cy.on('tap', createVertexOnTap);
+cy.on("tap", createVertexOnTap);
 
 // +-----------------------------+
 // |    DATA STRUCTURES          |
@@ -92,7 +95,7 @@ function edge(id, source, target) {
 
     other: function(vertex) {
       if (!this.contains(vertex)) {
-        alert('Invariant failed in edge.other().');
+        alert("Invariant failed in edge.other().");
         return source;
       }
 
@@ -107,11 +110,12 @@ function graph(vertices, edges) {
     edges,
 
     addVertex: function(vertex) {
-      if (this.containsVertex(vertex)) {
-        return this;
-      }
+      let vertices = [
+        ...this.vertices.filter(v => v.id != vertex.id),
+        vertex,
+      ];
 
-      return graph([...this.vertices, vertex], this.edges);
+      return graph(vertices, this.edges);
     },
 
     removeVertex: function(vertex) {
@@ -241,6 +245,8 @@ function colouring(graph, colours) {
   };
 }
 
+updateDataText();
+
 // +-----------------------------+
 // |    UTILITIES                |
 // +-----------------------------+
@@ -249,12 +255,12 @@ function mutateColouring(fn) {
   let c = cy.data();
   let _c = fn(c);
 
-  // Remove colours from all of c's vertices.
+  // Remove colours from all of c"s vertices.
   for (let vertex of c.graph.vertices) {
     cy.$(`#${vertex.id}`).removeClass(c.colours[vertex.id]);
   }
 
-  // Delete vertices and edges that aren't present in the new colouring.
+  // Delete vertices and edges that aren"t present in the new colouring.
   for (let edge of c.graph.edges) {
     if (!_c.graph.containsEdge(edge.source, edge.target)) {
       cy.$(`#${edge.id}`)[0].remove();
@@ -267,7 +273,7 @@ function mutateColouring(fn) {
     }
   }
 
-  // Add in new vertices and edges that aren't present in the old colouring.
+  // Add in new vertices and edges that aren"t present in the old colouring.
   cy.data(_c);
   cy.add(_c.toCytoscape());
 
@@ -275,6 +281,9 @@ function mutateColouring(fn) {
   for (let vertex of _c.graph.vertices) {
     cy.$(`#${vertex.id}`).addClass(_c.colours[vertex.id]);
   }
+
+  // Regenerate data for user.
+  updateDataText();
 }
 
 function getSelectedVertices() {
@@ -302,8 +311,8 @@ function getSelectedEdges() {
 function colourSelectedVertices(colour) {
   return (c) => {
     let vertices = getSelectedVertices();
-    for (let vertex of vertices) {
-      c = c.setColour(vertex, colour);
+    for (let v of vertices) {
+      c = c.setColour(v, colour);
     }
 
     return c;
@@ -320,12 +329,12 @@ function unselectSelected() {
 
 function deleteSelected() {
   return (c) => {
-    for (let vertex of getSelectedVertices()) {
-      c = c.remove(vertex);
+    for (let v of getSelectedVertices()) {
+      c = c.remove(v);
     }
 
-    for (let edge of getSelectedEdges()) {
-      c = c.disconnect(edge);
+    for (let e of getSelectedEdges()) {
+      c = c.disconnect(e);
     }
 
     return c;
@@ -345,6 +354,60 @@ function connectSelectedVertices() {
   };
 }
 
+function biconnectSelectedVertices() {
+  return (c) => {
+    let vertices = getSelectedVertices();
+    for (let i = 0; i < vertices.length; i++) {
+      for (let j = i+1; j < vertices.length; j++) {
+        let colourI = c.colours[vertices[i].id];
+        let colourJ = c.colours[vertices[j].id];
+
+        if (colourI !== colourJ) {
+          c = c.connect(vertices[i], vertices[j]);
+        }
+      }
+    }
+
+    return c;
+  };
+}
+
+function serialiseColouring() {
+  let c = cy.data();
+
+  let res = {
+    vertices: [],
+    edges: [...c.graph.edges],
+    colours: { ...c.colours }
+  };
+
+  for (let elem of cy.nodes()) {
+    res.vertices.push(vertexAt(elem.id(), elem.position().x, elem.position().y)); 
+  }
+
+  return JSON.stringify(res, null, 0);
+}
+
+function deserialiseColouring(json) {
+  let data = JSON.parse(json);
+
+  let vertices = [];
+  for (let v of data.vertices) {
+    vertices.push(vertexAt(v.id, v.x, v.y));
+  }
+  
+  let edges = [];
+  for (let e of data.edges) {
+    edges.push(edge(e.id, vertex(e.source.id), vertex(e.target.id)));
+  }
+
+  return colouring(graph(vertices, edges), data.colours);
+}
+
+function updateDataText() {
+  document.getElementById(DATA_ID).textContent = serialiseColouring();
+}
+
 function createVertexOnTap(event) {
   if (event.target != cy) {
     return; // user clicked on a vertex, not the background
@@ -359,7 +422,7 @@ function getUUID() {
 }
 
 // +-----------------------------+
-// |   HOOKS                     |
+// |   HOOKS AND HOTKEYS         |
 // +-----------------------------+
 
 window.cy = cy;
@@ -376,6 +439,11 @@ window.connectSelected = () => {
   unselectSelected();
 }
 
+window.biconnectSelected = () => {
+  mutateColouring(biconnectSelectedVertices());
+  unselectSelected();
+}
+
 window.deleteSelected = () => {
   mutateColouring(deleteSelected());
 }
@@ -383,3 +451,36 @@ window.deleteSelected = () => {
 window.updateColouring = () => {
   mutateColouring((c) => c.updateColouring());
 }
+
+window.saveDataToClipboard = () => {
+  if (!navigator.clipboard) {
+    alert("Saving to clipboard is not supported in your browser.");
+    return;
+  }
+
+  let data = serialiseColouring();
+  navigator.clipboard.writeText(data).then(
+    success => alert("Saved data to clipboard."),
+    err => console.error("Error saving to clipboard: " + err)
+  );
+}
+
+window.loadDataFromPrompt = () => {
+  let data = prompt("Paste graph data below:");
+
+  try {
+    mutateColouring((_) => deserialiseColouring(data));
+  } catch (err) {
+    console.error("Error deserialising colouring: " + err);
+    alert("Invalid graph data.");
+  }
+}
+
+mousetrap.bind(["W", "w"], () => window.colourSelected(WHITE));
+mousetrap.bind(["B", "b"], () => window.colourSelected(BLACK));
+mousetrap.bind(["C", "c"], () => window.connectSelected());
+mousetrap.bind(["n", "N"], () => window.biconnectSelected());
+mousetrap.bind(["U", "u"], () => window.updateColouring());
+mousetrap.bind(["d", "D", "backspace"], () => window.deleteSelected());
+mousetrap.bind(["s", "S"], () => window.saveDataToClipboard());
+mousetrap.bind(["l", "L"], () => window.loadDataFromPrompt());

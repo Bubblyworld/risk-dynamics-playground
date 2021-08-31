@@ -47,13 +47,15 @@
         margin-left: 1em;
       }
 
-      .task-text {
-        display: flex;
-        justify-content: center;
-        align-items: center;
+      .select-button b {
+        font-weight: bold;
+      }
+
+      .data-text {
         margin-top: 1em;
-        width: 300px;
-        height: 100px;
+        width: 400px;
+        height: 150px;
+        overflow: scroll;
         background-color: white;
         border: 1px solid darkgray;
         font-size: small;
@@ -69,16 +71,20 @@
       </div>
 
       <div class="select-wrap">
-        <button class="select-button" onclick="colourSelected(BLACK)">Set Black</button>
-        <button class="select-button" onclick="colourSelected(WHITE)">Set White</button>
-        <button class="select-button" onclick="connectSelected()">Connect</button>
-        <button class="select-button" onclick="deleteSelected()">Delete</button>
-        <button class="select-button" onclick="updateColouring()">Update</button>
+        <button class="select-button" onclick="colourSelected(BLACK)">Set <b>B</b>lack</button>
+        <button class="select-button" onclick="colourSelected(WHITE)">Set <b>W</b>hite</button>
+        <button class="select-button" onclick="connectSelected()"><b>C</b>onnect</button>
+        <button class="select-button" onclick="deleteSelected()"><b>D</b>elete</button>
+        <button class="select-button" onclick="updateColouring()"><b>U</b>pdate</button>
       </div>
 
-      <div class="task-text" id="text">
-        <i>No task has been run yet.</i>
+      <div class="select-wrap">
+        <button class="select-button" onclick="saveDataToClipboard()"><b>S</b>ave to Clipboard</button>
+        <button class="select-button" onclick="loadDataFromPrompt()"><b>L</b>oad</button>
+        <button class="select-button" onclick="biconnectSelected()">Bico<b>n</b>nect</button>
       </div>
+
+      <textarea class="data-text" id="text" readonly></textarea>
     </div>
 
     <script src="main.js"></script>
